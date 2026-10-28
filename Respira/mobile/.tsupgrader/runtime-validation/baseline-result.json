@@ -1,0 +1,27 @@
+{
+  "planHash": "44804c6d12f7c472e5d699addcf66e51e6c8b32f1e3a927f90f4c8ccb1f72db5",
+  "phase": "baseline",
+  "recordedAtUtc": "2026-10-28T05:50:46.3685064Z",
+  "retryCount": 0,
+  "resetBaseline": true,
+  "complete": true,
+  "result": {
+    "setupSucceeded": false,
+    "setupDurationMs": 1393,
+    "setupFailureOutput": "setup step 0 \u0027npm\u0027 failed (exit=1, timedOut=False)\r\nnpm error code EUSAGE\r\nnpm error\r\nnpm error \u0060npm ci\u0060 can only install packages when your package.json and package-lock.json or npm-shrinkwrap.json are in sync. Please update your lock file with \u0060npm install\u0060 before continuing.\r\nnpm error\r\nnpm error Missing: @babel/preset-env@7.29.7 from lock file\r\nnpm error Missing: @babel/plugin-bugfix-firefox-class-in-computed-class-key@7.29.7 from lock file\r\nnpm error Missing: @babel/plugin-bugfix-safari-class-field-initializer-scope@7.29.7 from lock file\r\nnpm error Missing: @babel/plugin-bugfix-safari-id-destructuring-collision-in-function-expression@7.29.7 from lock file\r\nnpm error Missing: @babel/plugin-bugfix-safari-rest-destructuring-rhs-array@7.29.7 from lock file\r\nnpm error Missing: @babel/plugin-bugfix-v8-spread-parameters-in-optional-chaining@7.29.7 from lock file\r\nnpm error Missing: @babel/plugin-bugfix-v8-static-class-fields-redefine-readonly@7.29.7 from lock file\r\nnpm error Missing: @babel/plugin-proposal-private-property-in-object@7.21.0-placeholder-for-preset-env.2 from lock file\r\nnpm error Missing: @babel/plugin-syntax-import-assertions@7.29.7 from lock file\r\nnpm error Missing: @babel/plugin-syntax-unicode-sets-regex@7.18.6 from lock file\r\nnpm error Missing: @babel/plugin-transform-block-scoped-functions@7.29.7 from lock file\r\nnpm error Missing: @babel/plugin-transform-class-static-block@7.29.7 from lock file\r\nnpm error Missing: @babel/plugin-transform-dotall-regex@7.29.7 from lock file\r\nnpm error Missing: @babel/plugin-transform-duplicate-keys@7.29.7 from lock file\r\nnpm error Missing: @babel/plugin-transform-duplicate-named-capturing-groups-regex@7.29.7 from lock file\r\nnpm error Missing: @babel/plugin-transform-dynamic-import@7.29.7 from lock file\r\nnpm error Missing: @babel/plugin-transform-explicit-resource-management@7.29.7 from lock file\r\nnpm error Missing: @babel/plugin-transform-exponentiation-operator@7.29.7 from lock file\r\nnpm error Missing: @babel/plugin-transform-json-strings@7.29.7 from lock file\r\nnpm error Missing: @babel/plugin-transform-member-expression-literals@7.29.7 from lock file\r\nnpm error Missing: @babel/plugin-transform-modules-amd@7.29.7 from lock file\r\nnpm error Missing: @babel/plugin-transform-modules-systemjs@7.29.8 from lock file\r\nnpm error Missing: @babel/plugin-transform-modules-umd@7.29.7 from lock file\r\nnpm error Missing: @babel/plugin-transform-new-target@7.29.7 from lock file\r\nnpm error Missing: @babel/plugin-transform-object-super@7.29.7 from lock file\r\nnpm error Missing: @babel/plugin-transform-property-literals@7.29.7 from lock file\r\nnpm error Missing: @babel/plugin-transform-regexp-modifiers@7.29.7 from lock file\r\nnpm error Missing: @babel/plugin-transform-reserved-words@7.29.7 from lock file\r\nnpm error Missing: @babel/plugin-transform-template-literals@7.29.7 from lock file\r\nnpm error Missing: @babel/plugin-transform-typeof-symbol@7.29.7 from lock file\r\nnpm error Missing: @babel/plugin-transform-unicode-escapes@7.29.7 from lock file\r\nnpm error Missing: @babel/plugin-transform-unicode-property-regex@7.29.7 from lock file\r\nnpm error Missing: @babel/plugin-transform-unicode-sets-regex@7.29.7 from lock file\r\nnpm error Missing: @babel/preset-modules@0.1.6-no-external-plugins from lock file\r\nnpm error Missing: babel-plugin-polyfill-corejs3@0.14.2 from lock file\r\nnpm error Missing: semver@6.3.1 from lock file\r\nnpm error Missing: esutils@2.0.3 from lock file\r\nnpm error\r\nnpm error Clean install a project\r\nnpm error\r\nnpm error Usage:\r\nnpm error npm ci\r\nnpm error\r\nnpm error Options:\r\nnpm error [--install-strategy \u003Choisted|nested|shallow|linked\u003E] [--legacy-bundling]\r\nnpm error [--global-style] [--omit \u003Cdev|optional|peer\u003E [--omit \u003Cdev|optional|peer\u003E ...]]\r\nnpm error [--include \u003Cprod|dev|optional|peer\u003E [--include \u003Cprod|dev|optional|peer\u003E ...]]\r\nnpm error [--strict-peer-deps] [--foreground-scripts] [--ignore-scripts]\r\nnpm error [--allow-directory \u003Call|none|root\u003E] [--allow-file \u003Call|none|root\u003E]\r\nnpm error [--allow-git \u003Call|none|root\u003E] [--allow-remote \u003Call|none|root\u003E]\r\nnpm error [--allow-scripts \u003Cpackage-list\u003E [--allow-scripts \u003Cpackage-list\u003E ...]]\r\n\n\u2026[truncated]",
+    "assertions": [],
+    "executions": [
+      {
+        "source": "setup[0]",
+        "resolvedExecutable": "C:\\Program Files\\nodejs\\npm.CMD",
+        "args": [
+          "ci"
+        ],
+        "cwd": "e:\\Project\\jay dsml\\Respira\\mobile",
+        "env": {},
+        "prependPath": [],
+        "platform": "win32"
+      }
+    ]
+  }
+}

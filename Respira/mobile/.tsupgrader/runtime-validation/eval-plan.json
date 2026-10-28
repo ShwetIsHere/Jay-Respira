@@ -1,0 +1,53 @@
+{
+  "generatedAt": "2026-10-28T11:07:00+05:30",
+  "generatedOnPlatform": "win32",
+  "projectType": "other",
+  "setup": [
+    {
+      "command": "npm",
+      "args": [
+        "ci"
+      ],
+      "timeoutSeconds": 600
+    }
+  ],
+  "assertions": [
+    {
+      "name": "typescript-typecheck",
+      "kind": "process",
+      "command": "npm",
+      "args": [
+        "run",
+        "typecheck"
+      ],
+      "verificationMethod": "exit-code",
+      "expected": "0",
+      "timeoutSeconds": 180
+    },
+    {
+      "name": "tests-pass",
+      "kind": "process",
+      "command": "npm",
+      "args": [
+        "test"
+      ],
+      "verificationMethod": "test-results",
+      "expected": "0",
+      "timeoutSeconds": 300
+    },
+    {
+      "name": "expo-config-valid",
+      "kind": "process",
+      "command": "npx",
+      "args": [
+        "expo",
+        "config",
+        "--type",
+        "public"
+      ],
+      "verificationMethod": "exit-code",
+      "expected": "0",
+      "timeoutSeconds": 120
+    }
+  ]
+}

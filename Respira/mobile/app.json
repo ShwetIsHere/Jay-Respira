@@ -1,0 +1,30 @@
+{
+  "expo": {
+    "name": "Respira",
+    "slug": "respira",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "plugins": [
+      "expo-asset",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Respira uses your location to show nearby air-quality information."
+        }
+      ]
+    ],
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ],
+      "package": "com.shwetishere.respira"
+    }
+  }
+}
