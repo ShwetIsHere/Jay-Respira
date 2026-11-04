@@ -1,6 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Animated,
+  Dimensions,
+  PanResponder,
   Pressable,
   ScrollView,
   StatusBar,
@@ -10,7 +13,12 @@ import {
   View,
 } from "react-native";
 import * as Location from "expo-location";
-import MapView, { Marker, PROVIDER_GOOGLE, Region } from "react-native-maps";
+import {
+  Camera,
+  MapView,
+  PointAnnotation,
+  UserLocation,
+} from "@maplibre/maplibre-react-native";
 import { PredictiveRiskAlert } from "./components/PredictiveRiskAlert";
 import {
   EnvironmentalFeatureSet,
@@ -25,6 +33,33 @@ interface UserLocation {
   latitude: number;
   longitude: number;
 }
+
+const OPENSTREETMAP_STYLE = {
+  version: 8 as const,
+  sources: {
+    openstreetmap: {
+      type: "raster" as const,
+      tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
+      tileSize: 256,
+      attribution: "© OpenStreetMap contributors",
+      maxzoom: 19,
+    },
+  },
+  layers: [
+    {
+      id: "openstreetmap-tiles",
+      type: "raster" as const,
+      source: "openstreetmap",
+      minzoom: 0,
+      maxzoom: 19,
+    },
+  ],
+};
+
+const SHEET_COLLAPSED_OFFSET = Math.min(
+  300,
+  Dimensions.get("window").height * 0.34,
+);
 
 type AppPage = "map" | "destination";
 
@@ -75,9 +110,65 @@ async function assessCoordinates(
 }
 
 export default function App() {
-  const mapRef = useRef<MapView | null>(null);
   const searchSequence = useRef(0);
   const destinationSequence = useRef(0);
+  const sheetTranslateY = useRef(new Animated.Value(0)).current;
+  const sheetOffset = useRef(0);
+  const snapSheet = (offset: number) => {
+    sheetOffset.current = offset;
+    Animated.spring(sheetTranslateY, {
+      toValue: offset,
+      useNativeDriver: true,
+      damping: 22,
+      stiffness: 210,
+      mass: 0.8,
+    }).start();
+  };
+  const sheetPanResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, gesture) =>
+        Math.abs(gesture.dy) > 5 && Math.abs(gesture.dy) > Math.abs(gesture.dx),
+      onPanResponderGrant: () => {
+        sheetTranslateY.stopAnimation((value) => {
+          sheetOffset.current = value;
+        });
+      },
+      onPanResponderMove: (_, gesture) => {
+        const nextOffset = Math.max(
+          0,
+          Math.min(SHEET_COLLAPSED_OFFSET, sheetOffset.current + gesture.dy),
+        );
+        sheetTranslateY.setValue(nextOffset);
+      },
+      onPanResponderRelease: (_, gesture) => {
+        sheetTranslateY.stopAnimation((value) => {
+          const shouldCollapse =
+            gesture.vy > 0.45 ||
+            (gesture.vy >= -0.45 && value > SHEET_COLLAPSED_OFFSET / 2);
+          const target = shouldCollapse ? SHEET_COLLAPSED_OFFSET : 0;
+          sheetOffset.current = target;
+          Animated.spring(sheetTranslateY, {
+            toValue: target,
+            useNativeDriver: true,
+            damping: 22,
+            stiffness: 210,
+            mass: 0.8,
+          }).start();
+        });
+      },
+      onPanResponderTerminate: () => {
+        const target =
+          sheetOffset.current > SHEET_COLLAPSED_OFFSET / 2
+            ? SHEET_COLLAPSED_OFFSET
+            : 0;
+        sheetOffset.current = target;
+        Animated.spring(sheetTranslateY, {
+          toValue: target,
+          useNativeDriver: true,
+        }).start();
+      },
+    }),
+  ).current;
   const [activePage, setActivePage] = useState<AppPage>("map");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -115,7 +206,8 @@ export default function App() {
       }
 
       const currentPosition = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Balanced,
+        accuracy: Location.Accuracy.Highest,
+        mayShowUserSettingsDialog: true,
       });
       if (
         !Number.isFinite(currentPosition.coords.latitude) ||
@@ -281,9 +373,6 @@ export default function App() {
   }
 
   const mapFocus = selectedDestination ?? location;
-  const mapRegion: Region | null = mapFocus
-    ? { latitude: mapFocus.latitude, longitude: mapFocus.longitude, latitudeDelta: 0.018, longitudeDelta: 0.018 }
-    : null;
   const displayedAssessment = selectedDestination ? destinationAssessment : currentAssessment;
   const displayedError = selectedDestination ? destinationError : error;
   const displayedLoading = selectedDestination ? destinationLoading : loading;
@@ -293,16 +382,6 @@ export default function App() {
     currentAssessment.features.observation_timestamp.slice(0, 10) ===
       destinationAssessment.features.observation_timestamp.slice(0, 10),
   );
-
-  useEffect(() => {
-    const mapFocus = selectedDestination ?? location;
-    if (mapFocus) {
-      mapRef.current?.animateToRegion(
-        { latitude: mapFocus.latitude, longitude: mapFocus.longitude, latitudeDelta: 0.018, longitudeDelta: 0.018 },
-        700,
-      );
-    }
-  }, [location, selectedDestination]);
 
   useEffect(() => {
     if (!mapFocus || mapLoaded) {
@@ -319,33 +398,37 @@ export default function App() {
       <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
       {activePage === "map" ? (
         <>
-          {mapFocus && mapRegion ? (
+          {mapFocus ? (
             <MapView
-              ref={mapRef}
               style={styles.map}
-              provider={PROVIDER_GOOGLE}
-              initialRegion={mapRegion}
-              mapType="standard"
-              showsUserLocation={Boolean(location)}
-              showsMyLocationButton={false}
-              toolbarEnabled={false}
-              onMapLoaded={() => {
+              mapStyle={OPENSTREETMAP_STYLE}
+              logoEnabled={false}
+              attributionEnabled
+              compassEnabled
+              onDidFinishLoadingMap={() => {
                 setMapLoaded(true);
-                logDiagnostic("map", "MAP", { event: "tiles_loaded", provider: "Google Maps" });
+                logDiagnostic("map", "MAP", { event: "tiles_loaded", provider: "OpenStreetMap via MapLibre" });
               }}
-              onMapReady={() => {
+              onDidFinishLoadingStyle={() => {
                 setMapReady(true);
-                logDiagnostic("map", "MAP", { event: "native_map_ready", provider: "Google Maps" });
+                logDiagnostic("map", "MAP", { event: "native_map_ready", provider: "MapLibre" });
               }}
-              accessibilityLabel={`Google map centered on ${selectedDestination?.name ?? "your current location"}`}
             >
+              <Camera
+                centerCoordinate={[mapFocus.longitude, mapFocus.latitude]}
+                zoomLevel={15}
+                animationMode="easeTo"
+                animationDuration={700}
+              />
+              {location ? <UserLocation visible /> : null}
               {selectedDestination ? (
-                <Marker
-                  coordinate={{ latitude: selectedDestination.latitude, longitude: selectedDestination.longitude }}
+                <PointAnnotation
+                  id={`destination-${selectedDestination.id}`}
+                  coordinate={[selectedDestination.longitude, selectedDestination.latitude]}
                   title={selectedDestination.name}
-                  description={selectedDestination.address}
-                  pinColor="#a84f3b"
-                />
+                >
+                  <View style={styles.destinationMarker} />
+                </PointAnnotation>
               ) : null}
             </MapView>
           ) : (
@@ -355,7 +438,7 @@ export default function App() {
                 {loading ? "Finding your location…" : "Map needs your location"}
               </Text>
               <Text style={styles.mapFallbackText}>
-                {error ?? "Share your location to open Google Maps centered on your position."}
+                {error ?? "Share your location to open OpenStreetMap centered on your position."}
               </Text>
             </View>
           )}
@@ -398,7 +481,7 @@ export default function App() {
             <Text style={styles.mapLabelText}>
               {!mapFocus
                 ? "WAITING FOR GPS"
-                : `${mapLoaded ? "GOOGLE MAP" : "MAP LOADING"} · ${selectedDestination?.name ?? "CURRENT LOCATION"}`}
+                : `${mapLoaded ? "OPENSTREETMAP" : "MAP LOADING"} · ${selectedDestination?.name ?? "CURRENT LOCATION"}`}
             </Text>
           </View>
 
@@ -406,38 +489,54 @@ export default function App() {
             <View style={styles.mapStatus}>
               {mapLoadTimedOut ? (
                 <>
-                  <Text style={styles.mapStatusTitle}>Google Maps tiles have not confirmed loading</Text>
+                  <Text style={styles.mapStatusTitle}>OpenStreetMap tiles have not confirmed loading</Text>
                   <Text style={styles.mapStatusText}>
                     {mapReady
-                      ? "The map view initialized but has not reported its tiles loaded. Check internet access and Google Play Services, then close and reopen Expo Go. Expo Go includes map support; your custom API key is needed for a native build, not Expo Go."
-                      : "The native map has not initialized. Check internet access and Google Play Services, then close and reopen Expo Go. Expo Go includes map support; your custom API key is needed for a native build, not Expo Go."}
+                      ? "MapLibre initialized but has not reported its tiles loaded. Check internet access, then retry."
+                      : "The native MapLibre view has not initialized. Close and reopen the development build, then retry."}
                   </Text>
                 </>
               ) : (
                 <>
                   <ActivityIndicator size="small" color="#23734e" />
                   <Text style={styles.mapStatusText}>
-                    {mapReady ? "Map opened; waiting for Google Maps tiles…" : "Initializing Google Maps…"}
+                    {mapReady ? "Map opened; waiting for OpenStreetMap tiles…" : "Initializing MapLibre…"}
                   </Text>
                 </>
               )}
             </View>
           ) : null}
 
-          <View style={styles.bottomSheet}>
-            <View style={styles.sheetHandle} />
-            <View style={styles.sheetHeading}>
-              <View style={styles.sheetTitleGroup}>
-                <Text style={styles.sheetEyebrow}>LOCAL CONDITIONS</Text>
-                <Text style={styles.sheetTitle}>Air & breathing</Text>
-              </View>
-              {locationTimestamp ? (
-                <View style={styles.locationChip}>
-                  <View style={styles.locationChipDot} />
-                  <Text style={styles.locationChipText}>GPS {new Date(locationTimestamp).toLocaleTimeString()}</Text>
+          <Animated.View
+            style={[styles.bottomSheet, { transform: [{ translateY: sheetTranslateY }] }]}
+          >
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Drag or tap to show or hide air and breathing predictions"
+              onPress={() =>
+                snapSheet(
+                  sheetOffset.current > SHEET_COLLAPSED_OFFSET / 2
+                    ? 0
+                    : SHEET_COLLAPSED_OFFSET,
+                )
+              }
+              style={styles.sheetDragArea}
+              {...sheetPanResponder.panHandlers}
+            >
+              <View style={styles.sheetHandle} />
+              <View style={styles.sheetHeading}>
+                <View style={styles.sheetTitleGroup}>
+                  <Text style={styles.sheetEyebrow}>LOCAL CONDITIONS</Text>
+                  <Text style={styles.sheetTitle}>Air & breathing</Text>
                 </View>
-              ) : null}
-            </View>
+                {locationTimestamp ? (
+                  <View style={styles.locationChip}>
+                    <View style={styles.locationChipDot} />
+                    <Text style={styles.locationChipText}>GPS {new Date(locationTimestamp).toLocaleTimeString()}</Text>
+                  </View>
+                ) : null}
+              </View>
+            </Pressable>
 
             {!location && !loading ? (
               <Pressable
@@ -477,7 +576,7 @@ export default function App() {
                 Location checks run on request. Air data and model output are not a medical diagnosis.
               </Text>
             </ScrollView>
-          </View>
+          </Animated.View>
         </>
       ) : (
         <ScrollView
@@ -686,6 +785,7 @@ export default function App() {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: "#eaf0e9" },
   map: { ...StyleSheet.absoluteFillObject },
+  destinationMarker: { width: 18, height: 18, borderRadius: 9, backgroundColor: "#a84f3b", borderWidth: 3, borderColor: "#ffffff" },
   mapFallback: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 36, paddingBottom: 300, backgroundColor: "#eaf0e9" },
   mapFallbackSpinner: { marginBottom: 12 },
   mapFallbackTitle: { color: "#19382c", fontSize: 18, fontWeight: "800", textAlign: "center" },
@@ -743,6 +843,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: -5 },
     elevation: 12,
   },
+  sheetDragArea: { paddingBottom: 3 },
   sheetHandle: { width: 38, height: 4, alignSelf: "center", backgroundColor: "#d8e1d9", borderRadius: 3, marginBottom: 13 },
   sheetHeading: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 3 },
   sheetTitleGroup: { flex: 1 },

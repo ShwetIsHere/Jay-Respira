@@ -10,7 +10,6 @@ from contextlib import asynccontextmanager
 from typing import Any, Dict, Literal
 
 import numpy as np
-import pandas as pd
 import httpx
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.encoders import jsonable_encoder
@@ -34,6 +33,31 @@ FEATURE_ORDER = [
     "nitrogen_dioxide_24h_mean",
     "ozone_8h_max",
 ]
+
+
+class FeatureMatrix:
+    """A small DataFrame-compatible matrix for scikit-learn inference.
+
+    Keeping the feature names allows scikit-learn to validate the trained
+    model contract without importing pandas and its native DLLs at API startup.
+    """
+
+    def __init__(self, row: Dict[str, float]):
+        self.columns = np.asarray(FEATURE_ORDER, dtype=object)
+        self._values = np.asarray(
+            [[row[feature_name] for feature_name in FEATURE_ORDER]],
+            dtype=float,
+        )
+
+    @property
+    def shape(self) -> tuple[int, int]:
+        return self._values.shape
+
+    def __len__(self) -> int:
+        return len(self._values)
+
+    def __array__(self, dtype=None, copy=None):
+        return np.array(self._values, dtype=dtype, copy=copy)
 
 
 class RiskFeatures(BaseModel):
@@ -190,11 +214,7 @@ def predict(payload: Dict[str, Any], request: Request) -> Dict[str, Any]:
             detail="Risk model is unavailable. Ensure the model file exists and is compatible with the training contract.",
         )
 
-    values = pd.DataFrame(
-        [feature_data.model_dump()],
-        columns=FEATURE_ORDER,
-        dtype=float,
-    )
+    values = FeatureMatrix(feature_data.model_dump())
     try:
         probabilities = MODEL.predict_proba(values)[0]
         classes = np.asarray(getattr(MODEL, "classes_", None))

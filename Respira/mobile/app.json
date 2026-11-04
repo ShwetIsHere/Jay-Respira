@@ -2,11 +2,13 @@
   "expo": {
     "name": "Respira",
     "slug": "respira",
-    "version": "1.0.0",
+    "version": "1.0.1",
+    "newArchEnabled": false,
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "plugins": [
       "expo-asset",
+      "@maplibre/maplibre-react-native",
       [
         "expo-location",
         {
@@ -18,6 +20,7 @@
       "supportsTablet": true
     },
     "android": {
+      "versionCode": 2,
       "permissions": [
         "ACCESS_COARSE_LOCATION",
         "ACCESS_FINE_LOCATION",
@@ -25,6 +28,12 @@
         "android.permission.ACCESS_FINE_LOCATION"
       ],
       "package": "com.shwetishere.respira"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "3c748780-4533-416b-b677-70403eb3904e"
+      }
+    },
+    "owner": "jaiswaljay010"
   }
 }

@@ -4,6 +4,27 @@ apply plugin: "com.facebook.react"
 
 def projectRoot = rootDir.getAbsoluteFile().getParentFile().getAbsolutePath()
 
+def readEnvValue = { String variableName ->
+    def candidates = [
+        new File(rootDir.getParentFile(), ".env"),
+        new File(rootDir.getParentFile().getParentFile(), ".env")
+    ]
+    for (def envFile : candidates) {
+        if (!envFile.exists()) {
+            continue
+        }
+        def matchingLine = envFile.readLines().find { line ->
+            line ==~ /^\s*${java.util.regex.Pattern.quote(variableName)}\s*=.*/
+        }
+        if (matchingLine != null) {
+            return matchingLine.split("=", 2)[1].trim()
+        }
+    }
+    return null
+}
+
+def googleMapsApiKey = System.getenv("GOOGLE_MAPS_API_KEY") ?: readEnvValue("GOOGLE_MAPS_API_KEY") ?: ""
+
 /**
  * This is the configuration block to customize your React Native Android app.
  * By default you don't need to apply any configuration, just uncomment the lines you need.
@@ -88,11 +109,12 @@ android {
 
     namespace 'com.shwetishere.respira'
     defaultConfig {
-        applicationId 'com.shwetishere.respira'
+        applicationId "com.shwetishere.respira"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
         versionName "1.0.0"
+        manifestPlaceholders = [GOOGLE_MAPS_API_KEY: googleMapsApiKey]
     }
     signingConfigs {
         debug {

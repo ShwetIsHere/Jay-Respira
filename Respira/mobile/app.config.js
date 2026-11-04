@@ -1,33 +1,9 @@
-require("dotenv").config({ path: require("path").join(__dirname, ".env") });
+const path = require("path");
+const dotenv = require("dotenv");
 
-const googleMapsApiKey = process.env.GOOGLE_MAPS_API_KEY;
+// Expo normally loads mobile/.env. Respira also keeps shared local values in
+// the repository-level .env, so load both without requiring any map key.
+dotenv.config({ path: path.join(__dirname, "..", ".env") });
+dotenv.config({ path: path.join(__dirname, ".env"), override: true });
 
-if (process.env.RESPIRA_REQUIRE_GOOGLE_MAPS_KEY === "1" && !googleMapsApiKey) {
-  throw new Error("GOOGLE_MAPS_API_KEY must be configured for this native development build.");
-}
-
-module.exports = ({ config }) => ({
-  ...config,
-  android: {
-    ...config.android,
-    ...(googleMapsApiKey
-      ? {
-          config: {
-            ...config.android?.config,
-            googleMaps: { apiKey: googleMapsApiKey },
-          },
-        }
-      : {}),
-  },
-  ios: {
-    ...config.ios,
-    ...(googleMapsApiKey
-      ? {
-          config: {
-            ...config.ios?.config,
-            googleMapsApiKey,
-          },
-        }
-      : {}),
-  },
-});
+module.exports = ({ config }) => config;
